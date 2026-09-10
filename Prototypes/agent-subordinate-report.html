@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>下級報表｜代理後台</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --bg-2: #111827;
+      --panel: #151c2c;
+      --panel-2: #1b2438;
+      --line: rgba(255,255,255,.08);
+      --line-2: rgba(255,255,255,.14);
+      --text: #e8eefc;
+      --muted: #93a0b8;
+      --muted-2: #6d7a93;
+      --gold: #e7c27a;
+      --gold-2: #c9a45a;
+      --cyan: #6ee7c5;
+      --blue: #7aa2ff;
+      --shadow: 0 12px 40px rgba(0,0,0,.28);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+    body {
+      font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background:
+        radial-gradient(1200px 500px at 10% -10%, rgba(122,162,255,.16), transparent 50%),
+        radial-gradient(900px 400px at 100% 0%, rgba(231,194,122,.08), transparent 45%),
+        var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .wrap { max-width: 1280px; margin: 0 auto; }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .crumb { color: var(--muted-2); font-size: 12px; letter-spacing: .04em; margin-bottom: 6px; }
+    h1 { font-size: 26px; font-weight: 700; letter-spacing: .02em; }
+    .plan-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .chip {
+      background: rgba(231,194,122,.08);
+      border: 1px solid rgba(231,194,122,.28);
+      color: var(--gold);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .chip.plain {
+      background: rgba(122,162,255,.08);
+      border-color: rgba(122,162,255,.24);
+      color: var(--blue);
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .kpi {
+      background: linear-gradient(180deg, var(--panel) 0%, #12192a 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .kpi .label { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+    .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: .02em; }
+    .kpi .hint { margin-top: 6px; color: var(--muted-2); font-size: 12px; }
+    .kpi.gold .value { color: var(--gold); }
+    .kpi.cyan .value { color: var(--cyan); }
+    .kpi.blue .value { color: var(--blue); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .panel-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      align-items: flex-end;
+    }
+    .field {
+      display: block;
+      flex: 1 1 180px;
+      min-width: 180px;
+      max-width: 260px;
+    }
+    .field.date {
+      flex: 1 1 280px;
+      min-width: 260px;
+      max-width: 340px;
+      position: relative;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+      align-items: center;
+    }
+    .field > span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input[type="text"] {
+      width: 100%;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--line-2);
+      background: var(--bg-2);
+      color: var(--text);
+      padding: 0 12px;
+      outline: none;
+    }
+    input:focus { border-color: var(--gold-2); }
+
+    .range-trigger {
+      width: 100%;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--line-2);
+      background: var(--bg-2);
+      color: var(--text);
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .range-trigger .ph { color: var(--muted-2); }
+    .range.open .range-trigger { border-color: var(--gold-2); }
+    .range-panel {
+      display: none;
+      position: absolute;
+      z-index: 30;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 620px;
+      max-width: min(620px, calc(100vw - 48px));
+      background: #1c2538;
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 12px;
+    }
+    .range.open .range-panel { display: block; }
+    .range-presets {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .range-presets button {
+      height: 30px;
+      border: 1px solid var(--line-2);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .range-presets button.active {
+      background: rgba(231,194,122,.16);
+      border-color: rgba(231,194,122,.45);
+      color: var(--gold);
+    }
+    .range-rule {
+      color: var(--muted-2);
+      font-size: 11px;
+      line-height: 1.5;
+      margin: -2px 0 10px;
+    }
+    .range-cals {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .cal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .cal-head button {
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--line-2);
+      background: transparent;
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .cal-week, .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      text-align: center;
+    }
+    .cal-week span {
+      color: var(--muted-2);
+      font-size: 11px;
+      padding: 4px 0;
+    }
+    .cal-grid button {
+      height: 30px;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .cal-grid button.out { color: var(--muted-2); opacity: .45; }
+    .cal-grid button:hover:not(:disabled) { background: rgba(255,255,255,.06); }
+    .cal-grid button:disabled {
+      color: var(--muted-2);
+      opacity: .24;
+      cursor: not-allowed;
+      background: transparent;
+    }
+    .cal-grid button.start, .cal-grid button.end {
+      background: #e7c27a;
+      color: #2a210f;
+      font-weight: 700;
+    }
+    .cal-grid button.in {
+      background: rgba(231,194,122,.16);
+      color: var(--gold);
+    }
+    .cal-grid button.today { box-shadow: inset 0 0 0 1px rgba(122,162,255,.7); }
+    .range-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .range-foot .picked { color: var(--muted); font-size: 12px; }
+    .range-foot .btns { display: flex; gap: 8px; }
+    .btn, .ms-toggle {
+      height: 32px;
+      border: 1px solid var(--line-2);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .shortcuts button.active {
+      background: rgba(231,194,122,.16);
+      border-color: rgba(231,194,122,.45);
+      color: var(--gold);
+    }
+
+    .btn.primary {
+      height: 40px;
+      background: linear-gradient(180deg, #e7c27a, #c9a45a);
+      color: #2a210f;
+      border: none;
+      font-weight: 700;
+      min-width: 84px;
+    }
+    .btn.ghost { height: 40px; min-width: 72px; }
+
+    .ms { position: relative; }
+    .ms-toggle {
+      width: 100%;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-2);
+    }
+    .ms-toggle .ph { color: var(--muted-2); }
+    .ms-menu {
+      display: none;
+      position: absolute;
+      z-index: 20;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: #1c2538;
+      border: 1px solid var(--line-2);
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+    }
+    .ms.open .ms-menu { display: block; }
+    .ms-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .ms-item:hover { background: rgba(255,255,255,.04); }
+    .ms-item input { accent-color: var(--gold-2); }
+
+    .table-wrap {
+      width: 100%;
+      height: clamp(320px, 46vh, 520px);
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable both-edges;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #101827;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 1220px; }
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: #12192a;
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      box-shadow: 0 1px 0 var(--line);
+    }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--line-2);
+      color: var(--muted);
+    }
+    .tag.agent { color: var(--blue); border-color: rgba(122,162,255,.35); background: rgba(122,162,255,.08); }
+    .tag.player { color: var(--cyan); border-color: rgba(110,231,197,.3); background: rgba(110,231,197,.08); }
+    .invite-code { color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+    .formula-label { display: inline-flex; align-items: center; gap: 5px; }
+    .formula-tip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgba(231,194,122,.48);
+      color: var(--gold);
+      background: rgba(231,194,122,.10);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      cursor: help;
+      vertical-align: middle;
+      flex: 0 0 16px;
+    }
+    .formula-tip:focus-visible {
+      outline: 2px solid rgba(122,162,255,.7);
+      outline-offset: 2px;
+    }
+    .formula-popover {
+      position: fixed;
+      z-index: 9999;
+      width: max-content;
+      max-width: min(380px, calc(100vw - 24px));
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line-2);
+      background: #0f1728;
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.55;
+      text-align: left;
+      white-space: normal;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(4px);
+      transition: opacity .14s ease, transform .14s ease, visibility .14s ease;
+    }
+    .formula-popover.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    tfoot td {
+      position: sticky;
+      bottom: 0;
+      z-index: 3;
+      background: #12192a;
+      font-weight: 700;
+      color: var(--gold);
+      box-shadow: 0 -1px 0 var(--line);
+    }
+    .table-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+    .table-wrap::-webkit-scrollbar-track { background: #0d1524; }
+    .table-wrap::-webkit-scrollbar-thumb {
+      background: #33415c;
+      border-radius: 999px;
+      border: 2px solid #0d1524;
+    }
+    .table-wrap::-webkit-scrollbar-thumb:hover { background: #465775; }
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 36px 12px !important;
+    }
+    .note {
+      margin-top: 10px;
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .table-actions { display: flex; align-items: center; gap: 8px; }
+    .btn.export {
+      height: 36px;
+      background: #24324b;
+      color: var(--text);
+      min-width: 104px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .export-wrap { position: relative; }
+    .export-menu {
+      display: none;
+      position: absolute;
+      z-index: 55;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 250px;
+      padding: 8px;
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      background: #1c2538;
+      box-shadow: var(--shadow);
+    }
+    .export-wrap.open .export-menu { display: block; }
+    .export-choice {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 9px;
+      cursor: pointer;
+      display: block;
+    }
+    .export-choice:hover, .export-choice:focus {
+      background: rgba(255,255,255,.06);
+      outline: none;
+    }
+    .export-choice + .export-choice { margin-top: 4px; }
+    .export-choice-title { display: block; font-size: 13px; font-weight: 700; }
+    .export-choice-hint { display: block; margin-top: 4px; font-size: 11px; color: var(--muted-2); line-height: 1.45; }
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .page-size-control,
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .page-size-control select {
+      height: 32px;
+      min-width: 66px;
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      background: var(--bg-2);
+      color: var(--text);
+      padding: 0 28px 0 10px;
+      outline: none;
+      cursor: pointer;
+    }
+    .page-summary {
+      color: var(--muted-2);
+      white-space: nowrap;
+    }
+    .page-numbers {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .page-btn {
+      min-width: 32px;
+      height: 32px;
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .page-btn:hover:not(:disabled) { border-color: rgba(231,194,122,.45); }
+    .page-btn.active {
+      background: rgba(231,194,122,.16);
+      border-color: rgba(231,194,122,.55);
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .page-ellipsis {
+      min-width: 22px;
+      text-align: center;
+      color: var(--muted-2);
+    }
+    .toast {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translate(-50%, -12px);
+      background: #1f2b44;
+      color: var(--text);
+      border: 1px solid rgba(110,231,197,.35);
+      border-radius: 12px;
+      padding: 12px 16px;
+      box-shadow: var(--shadow);
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      max-width: min(520px, calc(100vw - 32px));
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    .toast b { color: var(--cyan); }
+
+
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    tbody[aria-busy="true"] { opacity: .88; }
+
+    .table-state {
+      min-height: 128px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      white-space: normal;
+    }
+    .table-state-title {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .table-state-hint {
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .loading-spinner {
+      width: 22px;
+      height: 22px;
+      border: 2px solid rgba(255,255,255,.14);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: loading-spin .8s linear infinite;
+    }
+    @keyframes loading-spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1100px) {
+      .kpis { grid-template-columns: 1fr 1fr; }
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .field, .field.date { max-width: none; }
+    }
+    @media (max-width: 760px) {
+      .kpis { grid-template-columns: 1fr; }
+      .range-panel { width: min(360px, calc(100vw - 32px)); }
+      .range-cals { grid-template-columns: 1fr; }
+      .actions { width: 100%; }
+      .actions .btn { flex: 1; }
+      .table-wrap { height: clamp(300px, 50vh, 440px); }
+      .pagination-bar { align-items: flex-start; }
+      .page-summary { order: 3; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <div class="crumb">代理後台 ／ 報表中心 ／ 下級報表</div>
+        <h1>下級報表</h1>
+      </div>
+      <div class="plan-meta">
+        <span class="chip" id="planModeChip">方案模式：充值額</span>
+        <span class="chip plain" id="planCycleChip">方案結算：週結</span>
+      </div>
+    </div>
+
+    <section class="kpis" aria-label="搜尋範圍匯總">
+      <article class="kpi cyan">
+        <div class="label">有效投注</div>
+        <div class="value" id="sumValid">0.00</div>
+        <div class="hint">目前篩選結果合計</div>
+      </article>
+      <article class="kpi blue">
+        <div class="label">充值</div>
+        <div class="value" id="sumDeposit">0.00</div>
+        <div class="hint">成功到帳，不含優惠</div>
+      </article>
+      <article class="kpi gold">
+        <div class="label"><span class="formula-label">傭金 <span class="formula-tip" id="sumCommissionFormula" tabindex="0" data-formula="頁面傭金合計＝Σ（各直屬下級整條線成功到帳充值 × max(你的比例－該直屬下級比例, 0)）">!</span></span></div>
+        <div class="value" id="sumCommission">0.00</div>
+        <div class="hint" id="sumCommissionHint">直屬下級各線充值額傭金合計</div>
+      </article>
+      <article class="kpi">
+        <div class="label">活躍玩家</div>
+        <div class="value" id="sumActive">0</div>
+        <div class="hint">區間內有有效投注，已去重</div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">
+        <span>搜尋條件</span>
+        <span id="rangeText">查詢區間：-</span>
+      </div>
+      <div class="filters">
+        <label class="field">
+          <span>代理 UID</span>
+          <input id="uid" type="text" placeholder="精確匹配直屬下級 UID" autocomplete="off" />
+        </label>
+
+        <label class="field">
+          <span>邀請碼</span>
+          <input id="inviteCode" type="text" placeholder="搜尋直屬下級邀請碼" autocomplete="off" />
+        </label>
+
+        <label class="field date">
+          <span>結算週期</span>
+          <div class="range" id="rangePicker">
+            <button type="button" class="range-trigger" id="rangeTrigger">
+              <span id="rangeLabel" class="ph">選擇起始 ～ 結束日期</span>
+              <span>▾</span>
+            </button>
+            <div class="range-panel" id="rangePanel">
+              <div class="range-presets">
+                <button type="button" data-range="week">本週</button>
+                <button type="button" data-range="month">本月</button>
+                <button type="button" data-range="lastMonth">上月</button>
+                <button type="button" data-range="last90">近 90 日</button>
+              </div>
+              <div class="range-rule">單次查詢最多 90 日；不可選取未發生日期。近 90 日以今日為最後一天。</div>
+              <div class="range-cals">
+                <div>
+                  <div class="cal-head">
+                    <button type="button" id="prevMonth">‹</button>
+                    <strong id="calTitle1"></strong>
+                    <span></span>
+                  </div>
+                  <div class="cal-week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+                  <div class="cal-grid" id="cal1"></div>
+                </div>
+                <div>
+                  <div class="cal-head">
+                    <span></span>
+                    <strong id="calTitle2"></strong>
+                    <button type="button" id="nextMonth">›</button>
+                  </div>
+                  <div class="cal-week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+                  <div class="cal-grid" id="cal2"></div>
+                </div>
+              </div>
+              <div class="range-foot">
+                <span class="picked" id="rangePicked">請選擇起始日與結束日</span>
+                <div class="btns">
+                  <button type="button" class="btn ghost" id="rangeClear">清除</button>
+                  <button type="button" class="btn primary" id="rangeApply">確定</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </label>
+
+        <div class="actions">
+          <button class="btn primary" id="searchBtn" type="button">搜尋</button>
+          <button class="btn ghost" id="resetBtn" type="button">重置</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">
+        <span>直屬下級列表</span>
+        <div class="table-actions">
+          <span id="resultCount">0 筆</span>
+          <div class="export-wrap" id="exportWrap">
+            <button type="button" class="btn export" id="exportBtn" aria-haspopup="menu" aria-expanded="false">匯出報表 <span aria-hidden="true">▾</span></button>
+            <div class="export-menu" id="exportMenu" role="menu" aria-label="匯出範圍">
+              <button type="button" class="export-choice" data-export-scope="page" role="menuitem">
+                <span class="export-choice-title">下載本頁數據</span>
+                <span class="export-choice-hint" id="exportPageHint">僅匯出目前頁面顯示的資料</span>
+              </button>
+              <button type="button" class="export-choice" data-export-scope="all" role="menuitem">
+                <span class="export-choice-title">下載全部數據</span>
+                <span class="export-choice-hint" id="exportAllHint">匯出目前搜尋條件下的全部結果</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>代理UID</th>
+              <th>邀請碼</th>
+              <th class="num">有效投注</th>
+              <th class="num">充值</th>
+              <th class="num"><span class="formula-label">淨輸贏 <span class="formula-tip" tabindex="0" data-formula="淨輸贏＝(投注－派彩)－返水－優惠；正數＝平台盈利，負數＝平台虧損；金流費不納入。">!</span></span></th>
+              <th class="num">你的比例</th>
+              <th class="num">下級比例</th>
+              <th class="num"><span class="formula-label">傭金差 <span class="formula-tip" tabindex="0" data-formula="傭金差（極差）＝max(你的比例－直屬下級比例, 0)；只比較你和直屬下級，不跨級比較。">!</span></span></th>
+              <th class="num"><span class="formula-label">傭金 <span class="formula-tip" id="commissionFormula" tabindex="0" data-formula="該列傭金＝直屬下級整條線成功到帳充值 × max(你的比例－該直屬下級比例, 0)；充值不含優惠／贈金，整條線包含本人＋所有下層團隊。">!</span></span></th>
+              <th class="num">活躍玩家</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">查詢合計</td>
+              <td class="num" id="footValid">0.00</td>
+              <td class="num" id="footDeposit">0.00</td>
+              <td class="num" id="footPnl">0.00</td>
+              <td class="num" colspan="3"></td>
+              <td class="num" id="footCommission">0.00</td>
+              <td class="num" id="footActiveNote">去重見上方</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="pagination-bar" aria-label="報表分頁">
+        <div class="page-size-control">
+          <span>每頁</span>
+          <select id="pageSize" aria-label="每頁筆數">
+            <option value="10">10</option>
+            <option value="15" selected>15</option>
+            <option value="30">30</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <span>筆</span>
+        </div>
+        <div class="page-summary" id="pageSummary">第 0–0 筆，共 0 筆</div>
+        <div class="pagination-controls">
+          <button type="button" class="page-btn" id="prevPage" aria-label="上一頁">‹</button>
+          <div class="page-numbers" id="pageNumbers" aria-label="頁碼"></div>
+          <button type="button" class="page-btn" id="nextPage" aria-label="下一頁">›</button>
+        </div>
+      </div>
+      <p class="note" id="formulaNote">
+        結算週期為起始～結束日期元件，可在日曆點選跨月區間，本週／本月／上月位於元件內。
+        列表只列你的直屬下級；每列業績包含該直屬下級本人＋其所有下層團隊，樹狀關係可無限向下。極差只比較你和該直屬下級，不跨級。來源僅展示邀請碼。
+      </p>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="formula-popover" id="formulaPopover" role="tooltip"></div>
+
+  <script>
+
+const PLAN = {
+  mode: "deposit",
+  modeLabel: "充值額",
+  cycleLabel: "週結",
+  selfRate: 0.012
+};
+
+const CURRENT_AGENT_ROOT = "__CURRENT_AGENT__";
+const SETTLEMENT_TIMEZONE = "Asia/Taipei";
+
+function todayInSettlementTimezone() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SETTLEMENT_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+  const obj = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return new Date(Number(obj.year), Number(obj.month) - 1, Number(obj.day));
+}
+
+const TODAY = todayInSettlementTimezone();
+const MAX_RANGE_DAYS = 90;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const BASE_ROWS = [
+  { uid: "A10001", parent: CURRENT_AGENT_ROOT, inviteCode: "AG88", rate: 0.008, seed: 11, players: ["P11","P12","P13","P21"] },
+  { uid: "A10002", parent: CURRENT_AGENT_ROOT, inviteCode: "K6M2", rate: 0.007, seed: 23, players: ["P31","P32"] },
+  { uid: "A10003", parent: CURRENT_AGENT_ROOT, inviteCode: "Q9TX", rate: 0.006, seed: 37, players: ["P33"] },
+  { uid: "A21001", parent: "A10001", inviteCode: "N4P7", rate: 0.005, seed: 41, players: ["P12","P41"] },
+  { uid: "A21002", parent: "A10001", inviteCode: "H2K8", rate: 0.004, seed: 53, players: ["P51"] },
+  { uid: "A22001", parent: "A10002", inviteCode: "M7DA", rate: 0.0045, seed: 67, players: ["P32","P61"] },
+  { uid: "A31001", parent: "A21001", inviteCode: "V5R3", rate: 0.003, seed: 71, players: ["P41","P71"] },
+  { uid: "A31002", parent: "A21001", inviteCode: "C8W4", rate: 0.0025, seed: 83, players: ["P72"] },
+  { uid: "A41001", parent: "A31001", inviteCode: "T3J6", rate: 0.002, seed: 97, players: ["P81"] },
+  { uid: "A51001", parent: "A41001", inviteCode: "R2F9", rate: 0.001, seed: 109, players: ["P91"] },
+  { uid: "A61001", parent: "A51001", inviteCode: "Y7B5", rate: 0.0008, seed: 127, players: ["P101"] },
+  { uid: "A71001", parent: "A61001", inviteCode: "L4S8", rate: 0.0005, seed: 139, players: ["P111"] }
+];
+
+// Expand prototype data so pagination and export-scope behaviors can be exercised with more than 100 direct subordinates.
+function mockInviteCode(n) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let value = n * 7919 + 17;
+  let code = "";
+  for (let i = 0; i < 4; i++) {
+    code += chars[value % chars.length];
+    value = Math.floor(value / chars.length) + n * 13 + i;
+  }
+  return code;
+}
+
+for (let i = 4; i <= 135; i++) {
+  BASE_ROWS.push({
+    uid: "A" + String(10000 + i),
+    parent: CURRENT_AGENT_ROOT,
+    inviteCode: mockInviteCode(i),
+    rate: 0.006 + ((i * 7) % 5) * 0.0006,
+    seed: 149 + i * 11,
+    players: ["PX" + i + "A", "PX" + i + "B", "PX" + i + "C"]
+  });
+}
+
+const $ = (id) => document.getElementById(id);
+const money = (n) => Number(n).toLocaleString("zh-Hant", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pct = (n) => (n * 100).toFixed(2) + "%";
+const z = (n) => String(n).padStart(2, "0");
+const ymd = (d) => d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
+
+function parseYmd(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function daySerial(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / MS_PER_DAY);
+}
+
+function rangeDaysInclusive(start, end) {
+  return daySerial(end) - daySerial(start) + 1;
+}
+
+function addDays(date, amount) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + amount);
+  return d;
+}
+
+function calendarViewForDate(date) {
+  const currentMonth = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+  const candidate = new Date(date.getFullYear(), date.getMonth(), 1);
+  return candidate >= currentMonth
+    ? new Date(TODAY.getFullYear(), TODAY.getMonth() - 1, 1)
+    : candidate;
+}
+
+function eachDate(startStr, endStr) {
+  const list = [];
+  const cur = parseYmd(startStr);
+  const end = parseYmd(endStr);
+  while (cur <= end) {
+    list.push(ymd(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return list;
+}
+
+function hash(n) {
+  const x = Math.sin(n) * 10000;
+  return x - Math.floor(x);
+}
+
+function subordinateDepth(row) {
+  let depth = 1;
+  let parent = row.parent;
+  const visited = new Set([row.uid]);
+  while (parent && parent !== CURRENT_AGENT_ROOT) {
+    if (visited.has(parent)) return Number.POSITIVE_INFINITY;
+    visited.add(parent);
+    const node = BASE_ROWS.find((r) => r.uid === parent);
+    if (!node) return Number.POSITIVE_INFINITY;
+    depth += 1;
+    parent = node.parent;
+  }
+  return parent === CURRENT_AGENT_ROOT ? depth : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * 原型每日數據。
+ * 亞洲口徑：
+ * 平台盈虧 = 投注 - 派彩
+ * 淨輸贏 = 平台盈虧 - 返水 - 優惠
+ * 金流費不納入代理淨輸贏。
+ */
+function dayMetrics(row, dateStr) {
+  const dayNum = Number(dateStr.replace(/-/g, ""));
+  const h = hash(row.seed * 97 + dayNum);
+  const depth = subordinateDepth(row);
+  const scale = Math.max(0.015, Math.pow(0.46, Math.max(0, depth - 1)));
+
+  const bet = Math.round((21000 + h * 52000) * scale);
+  const validBet = Math.round(bet * (0.88 + hash(row.seed * 11 + dayNum) * 0.10));
+  const platformPnl = Math.round(bet * (hash(dayNum + row.seed * 3) * 0.18 - 0.06));
+  const payout = bet - platformPnl;
+  const rebate = Math.round(validBet * (0.012 + hash(row.seed * 5 + dayNum) * 0.010));
+  const bonus = Math.round(bet * (0.004 + hash(row.seed * 13 + dayNum) * 0.012));
+  const pnl = platformPnl - rebate - bonus;
+  const deposit = Math.round(validBet * (0.08 + hash(row.seed + dayNum) * 0.12));
+  const active = h > 0.35 ? row.players.filter((_, idx) => hash(dayNum + idx + row.seed) > 0.45) : [];
+
+  return { bet, payout, validBet, rebate, bonus, platformPnl, pnl, deposit, active };
+}
+
+function isVisibleSubordinate(row) {
+  return Number.isFinite(subordinateDepth(row));
+}
+
+function isDirectSubordinate(row) {
+  return row.parent === CURRENT_AGENT_ROOT;
+}
+
+function isDescendantOf(candidate, ancestorUid) {
+  let parent = candidate.parent;
+  const visited = new Set();
+  while (parent && parent !== CURRENT_AGENT_ROOT) {
+    if (parent === ancestorUid) return true;
+    if (visited.has(parent)) return false;
+    visited.add(parent);
+    const node = BASE_ROWS.find((r) => r.uid === parent);
+    parent = node ? node.parent : null;
+  }
+  return false;
+}
+
+function teamMembers(row) {
+  return BASE_ROWS.filter((candidate) =>
+    isVisibleSubordinate(candidate) &&
+    (candidate.uid === row.uid || isDescendantOf(candidate, row.uid))
+  );
+}
+
+function aggregateOwnRow(row, start, end) {
+  const todayStr = ymd(TODAY);
+  const to = end > todayStr ? todayStr : end;
+  if (start > to) {
+    return { bet: 0, payout: 0, validBet: 0, rebate: 0, bonus: 0, platformPnl: 0, pnl: 0, deposit: 0, activePlayers: [] };
+  }
+
+  let bet = 0, payout = 0, validBet = 0, rebate = 0, bonus = 0, platformPnl = 0, pnl = 0, deposit = 0;
+  const active = new Set();
+
+  eachDate(start, to).forEach((dateStr) => {
+    const m = dayMetrics(row, dateStr);
+    bet += m.bet;
+    payout += m.payout;
+    validBet += m.validBet;
+    rebate += m.rebate;
+    bonus += m.bonus;
+    platformPnl += m.platformPnl;
+    pnl += m.pnl;
+    deposit += m.deposit;
+    m.active.forEach((p) => active.add(p));
+  });
+
+  return { bet, payout, validBet, rebate, bonus, platformPnl, pnl, deposit, activePlayers: [...active] };
+}
+
+/**
+ * 每一列取「該下級本人 + 其團隊」整條線；樹深度不限。
+ */
+function aggregateRow(row, start, end) {
+  const totals = {
+    bet: 0, payout: 0, validBet: 0, rebate: 0, bonus: 0,
+    platformPnl: 0, pnl: 0, deposit: 0
+  };
+  const active = new Set();
+
+  teamMembers(row).forEach((member) => {
+    const own = aggregateOwnRow(member, start, end);
+    Object.keys(totals).forEach((key) => { totals[key] += own[key]; });
+    own.activePlayers.forEach((p) => active.add(p));
+  });
+
+  return { ...row, ...totals, activePlayers: [...active] };
+}
+
+function startOfWeek(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
+  return date;
+}
+
+function endOfWeek(d) {
+  const s = startOfWeek(d);
+  s.setDate(s.getDate() + 6);
+  return s;
+}
+
+const rangeState = {
+  start: ymd(startOfWeek(TODAY)),
+  end: ymd(TODAY),
+  tempStart: ymd(startOfWeek(TODAY)),
+  tempEnd: ymd(TODAY),
+  view: calendarViewForDate(startOfWeek(TODAY)),
+  preset: "week"
+};
+
+function presetRange(type) {
+  let start, end;
+  if (type === "week") {
+    // 本週固定週一開始，結束日最多到今天，不帶入尚未發生日期。
+    start = startOfWeek(TODAY);
+    end = new Date(TODAY);
+  } else if (type === "month") {
+    start = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+    end = new Date(TODAY);
+  } else if (type === "lastMonth") {
+    start = new Date(TODAY.getFullYear(), TODAY.getMonth() - 1, 1);
+    end = new Date(TODAY.getFullYear(), TODAY.getMonth(), 0);
+  } else if (type === "last90") {
+    start = addDays(TODAY, -(MAX_RANGE_DAYS - 1));
+    end = new Date(TODAY);
+  } else {
+    return;
+  }
+  rangeState.tempStart = ymd(start);
+  rangeState.tempEnd = ymd(end);
+  rangeState.preset = type;
+  rangeState.view = calendarViewForDate(start);
+  renderCalendars();
+  updateRangePicked();
+}
+
+function validateRange(start, end) {
+  if (!start || !end) return "請選擇完整的起始日與結束日";
+  if (start > end) return "起始日不可晚於結束日";
+  if (end > ymd(TODAY)) return "不可選取未發生日期";
+  if (rangeDaysInclusive(start, end) > MAX_RANGE_DAYS) return "單次查詢最多可選 90 日";
+  return "";
+}
+
+function applyRange(start, end, preset) {
+  const error = validateRange(start, end);
+  if (error) return false;
+  rangeState.start = start;
+  rangeState.end = end;
+  rangeState.tempStart = start;
+  rangeState.tempEnd = end;
+  rangeState.preset = preset || "";
+  const label = $("rangeLabel");
+  label.textContent = start.replace(/-/g, "/") + "  ～  " + end.replace(/-/g, "/");
+  label.classList.remove("ph");
+  $("rangeText").textContent = "查詢區間：" + start + " ～ " + end;
+  return true;
+}
+
+function updateRangePicked() {
+  const s = rangeState.tempStart;
+  const e = rangeState.tempEnd;
+  if (s && e) {
+    $("rangePicked").textContent = s + " ～ " + e + "（" + rangeDaysInclusive(s, e) + " 日）";
+  } else if (s) {
+    $("rangePicked").textContent = s + " ～ 選擇結束日（最多 90 日）";
+  } else {
+    $("rangePicked").textContent = "請選擇起始日與結束日（最多 90 日）";
+  }
+  document.querySelectorAll(".range-presets button").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.range === rangeState.preset);
+  });
+}
+
+function renderCalendars() {
+  const left = new Date(rangeState.view.getFullYear(), rangeState.view.getMonth(), 1);
+  const right = new Date(left.getFullYear(), left.getMonth() + 1, 1);
+  const currentMonth = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+  $("calTitle1").textContent = left.getFullYear() + "年" + (left.getMonth() + 1) + "月";
+  $("calTitle2").textContent = right.getFullYear() + "年" + (right.getMonth() + 1) + "月";
+  $("cal1").innerHTML = calendarHtml(left);
+  $("cal2").innerHTML = calendarHtml(right);
+  // 右側已顯示本月時，不再允許導覽到全為未來日期的月份。
+  $("nextMonth").disabled = right >= currentMonth;
+}
+
+function calendarHtml(monthDate) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const first = new Date(year, month, 1);
+  // 週一為每週第一欄：Mon=0 ... Sun=6
+  const startPad = (first.getDay() + 6) % 7;
+  const days = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+
+  for (let i = 0; i < startPad; i++) {
+    const d = new Date(year, month, -startPad + i + 1);
+    cells.push(dayBtn(d, true));
+  }
+  for (let d = 1; d <= days; d++) cells.push(dayBtn(new Date(year, month, d), false));
+  while (cells.length % 7 !== 0) {
+    const extra = cells.length - startPad - days + 1;
+    cells.push(dayBtn(new Date(year, month + 1, extra), true));
+  }
+  return cells.join("");
+}
+
+function isDateDisabled(key) {
+  const todayKey = ymd(TODAY);
+  if (key > todayKey) return true;
+
+  // 已選第一個日期、尚未選第二個日期時，只開放與第一日相距 90 日內的日期。
+  const s = rangeState.tempStart;
+  const e = rangeState.tempEnd;
+  if (s && !e) {
+    const from = key < s ? key : s;
+    const to = key < s ? s : key;
+    if (rangeDaysInclusive(from, to) > MAX_RANGE_DAYS) return true;
+  }
+  return false;
+}
+
+function dayBtn(date, out) {
+  const key = ymd(date);
+  const cls = ["day"];
+  if (out) cls.push("out");
+  if (key === ymd(TODAY)) cls.push("today");
+  const s = rangeState.tempStart;
+  const e = rangeState.tempEnd;
+  if (s && key === s) cls.push("start");
+  if (e && key === e) cls.push("end");
+  if (s && e && key > s && key < e) cls.push("in");
+
+  const disabled = isDateDisabled(key);
+  const reason = key > ymd(TODAY)
+    ? "未發生日期不可選"
+    : (disabled ? "與起始日相距超過 90 日" : "");
+  return `<button type="button" class="${cls.join(" ")}" data-date="${key}" ${disabled ? "disabled" : ""} ${reason ? `title="${reason}"` : ""}>${date.getDate()}</button>`;
+}
+
+function pickDay(key) {
+  if (isDateDisabled(key)) return;
+
+  if (!rangeState.tempStart || (rangeState.tempStart && rangeState.tempEnd)) {
+    rangeState.tempStart = key;
+    rangeState.tempEnd = "";
+    rangeState.preset = "";
+  } else {
+    const start = key < rangeState.tempStart ? key : rangeState.tempStart;
+    const end = key < rangeState.tempStart ? rangeState.tempStart : key;
+    if (validateRange(start, end)) return;
+    rangeState.tempStart = start;
+    rangeState.tempEnd = end;
+    rangeState.preset = "";
+  }
+  renderCalendars();
+  updateRangePicked();
+}
+
+
+function commissionBase(row) {
+  // 此代理線方案已定型為「充值額」，本頁不切換其他計傭模式。
+  return row.deposit;
+}
+
+function calcCommission(row) {
+  const diff = Math.max(0, PLAN.selfRate - row.rate);
+  return commissionBase(row) * diff;
+}
+
+function applyFilter() {
+  const uid = $("uid").value.trim();
+  const inviteCode = $("inviteCode").value.trim().toLowerCase();
+  const start = rangeState.start;
+  const end = rangeState.end;
+
+  return BASE_ROWS
+    .filter(isDirectSubordinate)
+    .filter((row) => {
+      if (uid && row.uid !== uid) return false;
+      if (inviteCode && !row.inviteCode.toLowerCase().includes(inviteCode)) return false;
+      return true;
+    })
+    .sort((a, b) => a.uid.localeCompare(b.uid))
+    .map((row) => aggregateRow(row, start, end))
+    .filter((row) => row.validBet > 0 || row.deposit > 0 || row.pnl !== 0);
+}
+
+const paginationState = {
+  page: 1,
+  pageSize: 15
+};
+
+function getCurrentPageRows(list) {
+  const offset = (paginationState.page - 1) * paginationState.pageSize;
+  return list.slice(offset, offset + paginationState.pageSize);
+}
+
+function updateExportMenuInfo(list) {
+  const pageRows = getCurrentPageRows(list);
+  $("exportPageHint").textContent = `目前第 ${paginationState.page} 頁，共 ${pageRows.length} 筆`;
+  $("exportAllHint").textContent = `目前搜尋結果，共 ${list.length} 筆`;
+}
+
+function closeExportMenu() {
+  $("exportWrap").classList.remove("open");
+  $("exportBtn").setAttribute("aria-expanded", "false");
+}
+
+function paginationItems(totalPages, currentPage) {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+  const sorted = [...pages].filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+  const items = [];
+  sorted.forEach((page, index) => {
+    if (index > 0 && page - sorted[index - 1] > 1) items.push("...");
+    items.push(page);
+  });
+  return items;
+}
+
+function renderPagination(totalItems) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / paginationState.pageSize));
+  paginationState.page = Math.min(Math.max(1, paginationState.page), totalPages);
+  const startIndex = totalItems ? (paginationState.page - 1) * paginationState.pageSize + 1 : 0;
+  const endIndex = totalItems ? Math.min(paginationState.page * paginationState.pageSize, totalItems) : 0;
+
+  $("pageSummary").textContent = `第 ${startIndex}–${endIndex} 筆，共 ${totalItems} 筆`;
+  $("prevPage").disabled = paginationState.page <= 1 || totalItems === 0;
+  $("nextPage").disabled = paginationState.page >= totalPages || totalItems === 0;
+
+  $("pageNumbers").innerHTML = paginationItems(totalPages, paginationState.page).map((item) => {
+    if (item === "...") return `<span class="page-ellipsis">…</span>`;
+    const active = item === paginationState.page;
+    return `<button type="button" class="page-btn${active ? " active" : ""}" data-page="${item}" ${active ? 'aria-current="page"' : ""}>${item}</button>`;
+  }).join("");
+}
+
+function render() {
+  const start = rangeState.start;
+  const end = rangeState.end;
+  const tbody = $("tbody");
+  tbody.innerHTML = "";
+  $("rangeText").textContent = start && end ? ("查詢區間：" + start + " ～ " + end) : "查詢區間：-";
+
+  const rangeError = validateRange(start, end);
+  if (rangeError) {
+    tbody.innerHTML = `<tr><td class="empty" colspan="10">${rangeError}</td></tr>`;
+    updateSums([]);
+    $("resultCount").textContent = "0 筆";
+    renderPagination(0);
+    return;
+  }
+
+  const list = applyFilter();
+  updateSums(list); // 匯總與表尾永遠是「本次查詢全部結果」，不受分頁影響。
+  $("resultCount").textContent = "共 " + list.length + " 筆";
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td class="empty" colspan="10"><div class="table-state"><div class="table-state-title">查無相關數據</div><div class="table-state-hint">目前條件沒有符合的直屬下級資料，請調整代理 UID、邀請碼或日期區間後重新搜尋。</div></div></td></tr>`;
+    renderPagination(0);
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(list.length / paginationState.pageSize));
+  paginationState.page = Math.min(paginationState.page, totalPages);
+  const pageRows = getCurrentPageRows(list);
+
+  pageRows.forEach((row) => {
+    const diff = Math.max(0, PLAN.selfRate - row.rate);
+    const comm = calcCommission(row);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.uid}</td>
+      <td class="invite-code">${row.inviteCode}</td>
+      <td class="num">${money(row.validBet)}</td>
+      <td class="num">${money(row.deposit)}</td>
+      <td class="num" title="亞洲口徑：平台盈虧－返水－優惠">${money(row.pnl)}</td>
+      <td class="num">${pct(PLAN.selfRate)}</td>
+      <td class="num">${pct(row.rate)}</td>
+      <td class="num">${pct(diff)}</td>
+      <td class="num">${money(comm)}</td>
+      <td class="num">${row.activePlayers.length}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  renderPagination(list.length);
+}
+
+function updateSums(list) {
+  const valid = list.reduce((s, r) => s + r.validBet, 0);
+  const deposit = list.reduce((s, r) => s + r.deposit, 0);
+  const pnl = list.reduce((s, r) => s + r.pnl, 0);
+  const comm = list.reduce((s, r) => s + calcCommission(r), 0);
+  const active = new Set(list.flatMap((r) => r.activePlayers)).size;
+
+  $("sumValid").textContent = money(valid);
+  $("sumDeposit").textContent = money(deposit);
+  $("sumCommission").textContent = money(comm);
+  $("sumActive").textContent = active.toLocaleString("zh-Hant");
+  $("sumCommissionHint").textContent = "直屬下級各線充值額傭金合計";
+
+  $("footValid").textContent = money(valid);
+  $("footDeposit").textContent = money(deposit);
+  $("footPnl").textContent = money(pnl);
+  $("footCommission").textContent = money(comm);
+  $("footActiveNote").textContent = active.toLocaleString("zh-Hant") + "（去重）";
+}
+
+let isLoading = false;
+
+function setLoading(loading) {
+  isLoading = loading;
+  // 查詢送出後鎖定搜尋與相關操作，避免重複請求／重複匯出。
+  $("searchBtn").disabled = loading;
+  $("resetBtn").disabled = loading;
+  $("exportBtn").disabled = loading;
+  $("pageSize").disabled = loading;
+  $("searchBtn").textContent = loading ? "搜尋中…" : "搜尋";
+  $("tbody").setAttribute("aria-busy", loading ? "true" : "false");
+
+  if (loading) {
+    $("prevPage").disabled = true;
+    $("nextPage").disabled = true;
+    document.querySelectorAll("#pageNumbers .page-btn").forEach((btn) => (btn.disabled = true));
+  } else {
+    $("pageSize").disabled = false;
+  }
+}
+
+function runSearch(resetPage = true) {
+  if (isLoading) return;
+  closeExportMenu();
+  if (resetPage) paginationState.page = 1;
+  setLoading(true);
+  $("resultCount").textContent = "查詢中…";
+  $("pageSummary").textContent = "資料載入中…";
+  $("pageNumbers").innerHTML = "";
+  $("tbody").innerHTML = `<tr><td class="empty" colspan="10"><div class="table-state"><span class="loading-spinner" aria-hidden="true"></span><div class="table-state-title">資料載入中…</div><div class="table-state-hint">正在依目前條件取得報表資料，請稍候。</div></div></td></tr>`;
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      render();
+      setLoading(false);
+    }, 360);
+  });
+}
+
+let toastTimer = null;
+function showToast(message) {
+  const el = $("toast");
+  el.innerHTML = message;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 4000);
+}
+
+function exportName(scope) {
+  const start = (rangeState.start || "").replace(/-/g, "");
+  const end = (rangeState.end || "").replace(/-/g, "");
+  const suffix = scope === "page" ? "_本頁_第" + paginationState.page + "頁" : "_全部";
+  return "下級報表_" + start + "~" + end + suffix + ".xlsx";
+}
+
+function xmlEscape(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function excelColumnName(n) {
+  let name = "";
+  while (n > 0) {
+    n -= 1;
+    name = String.fromCharCode(65 + (n % 26)) + name;
+    n = Math.floor(n / 26);
+  }
+  return name;
+}
+
+function xlsxCell(value, row, col) {
+  const ref = excelColumnName(col) + row;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `<c r="${ref}"><v>${value}</v></c>`;
+  }
+  return `<c r="${ref}" t="inlineStr"><is><t>${xmlEscape(value ?? "")}</t></is></c>`;
+}
+
+function buildSheetXml(rows) {
+  const rowXml = rows.map((row, rowIndex) => {
+    const cells = row.map((value, colIndex) => xlsxCell(value, rowIndex + 1, colIndex + 1)).join("");
+    return `<row r="${rowIndex + 1}">${cells}</row>`;
+  }).join("");
+  const lastRow = Math.max(1, rows.length);
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <dimension ref="A1:J${lastRow}"/>
+  <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+  <cols>
+    <col min="1" max="2" width="16" customWidth="1"/>
+    <col min="3" max="10" width="16" customWidth="1"/>
+  </cols>
+  <sheetData>${rowXml}</sheetData>
+  <autoFilter ref="A1:J${Math.max(1, rows.length - 1)}"/>
+</worksheet>`;
+}
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+const u16 = (n) => [n & 0xFF, (n >>> 8) & 0xFF];
+const u32 = (n) => [n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF];
+
+function concatBytes(parts) {
+  const size = parts.reduce((s, p) => s + p.length, 0);
+  const out = new Uint8Array(size);
+  let offset = 0;
+  parts.forEach((p) => {
+    out.set(p, offset);
+    offset += p.length;
+  });
+  return out;
+}
+
+function zipStore(files) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  files.forEach((file) => {
+    const name = encoder.encode(file.name);
+    const data = typeof file.content === "string" ? encoder.encode(file.content) : file.content;
+    const crc = crc32(data);
+
+    const localHeader = new Uint8Array([
+      ...u32(0x04034B50), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+      ...u32(crc), ...u32(data.length), ...u32(data.length),
+      ...u16(name.length), ...u16(0)
+    ]);
+    const local = concatBytes([localHeader, name, data]);
+    localParts.push(local);
+
+    const centralHeader = new Uint8Array([
+      ...u32(0x02014B50), ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+      ...u32(crc), ...u32(data.length), ...u32(data.length),
+      ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+      ...u32(0), ...u32(offset)
+    ]);
+    centralParts.push(concatBytes([centralHeader, name]));
+    offset += local.length;
+  });
+
+  const centralOffset = offset;
+  const centralSize = centralParts.reduce((s, p) => s + p.length, 0);
+  const end = new Uint8Array([
+    ...u32(0x06054B50), ...u16(0), ...u16(0),
+    ...u16(files.length), ...u16(files.length),
+    ...u32(centralSize), ...u32(centralOffset), ...u16(0)
+  ]);
+
+  return concatBytes([...localParts, ...centralParts, end]);
+}
+
+function makeXlsx(rows) {
+  const sheetXml = buildSheetXml(rows);
+  const files = [
+    {
+      name: "[Content_Types].xml",
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`
+    },
+    {
+      name: "_rels/.rels",
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`
+    },
+    {
+      name: "xl/workbook.xml",
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="下級報表" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`
+    },
+    {
+      name: "xl/_rels/workbook.xml.rels",
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`
+    },
+    { name: "xl/worksheets/sheet1.xml", content: sheetXml }
+  ];
+  return zipStore(files);
+}
+
+function buildExportRows(list) {
+  const header = ["代理UID","邀請碼","有效投注","充值","淨輸贏","你的比例","直屬下級比例","傭金差","傭金","活躍玩家"];
+  const rows = list.map((row) => {
+    const diff = Math.max(0, PLAN.selfRate - row.rate);
+    return [
+      row.uid,
+      row.inviteCode,
+      row.validBet,
+      row.deposit,
+      row.pnl,
+      (PLAN.selfRate * 100).toFixed(2) + "%",
+      (row.rate * 100).toFixed(2) + "%",
+      (diff * 100).toFixed(2) + "%",
+      Number(calcCommission(row).toFixed(2)),
+      row.activePlayers.length
+    ];
+  });
+
+  const active = new Set(list.flatMap((r) => r.activePlayers)).size;
+  const total = [
+    "合計", "",
+    list.reduce((s, r) => s + r.validBet, 0),
+    list.reduce((s, r) => s + r.deposit, 0),
+    list.reduce((s, r) => s + r.pnl, 0),
+    "", "", "",
+    Number(list.reduce((s, r) => s + calcCommission(r), 0).toFixed(2)),
+    active
+  ];
+
+  return [header, ...rows, total];
+}
+
+function updatePlanDisplay() {
+  $("planModeChip").textContent = "方案模式：" + PLAN.modeLabel;
+  $("planCycleChip").textContent = "方案結算：" + PLAN.cycleLabel;
+
+  const commissionFormula = "該列傭金＝直屬下級整條線成功到帳充值 × max(你的比例－該直屬下級比例, 0)；充值不含優惠／贈金。";
+  const totalFormula = "頁面傭金合計＝Σ（各直屬下級整條線成功到帳充值 × max(你的比例－該直屬下級比例, 0)）";
+  $("commissionFormula").dataset.formula = commissionFormula;
+  $("sumCommissionFormula").dataset.formula = totalFormula;
+
+  $("formulaNote").innerHTML =
+    `目前代理線方案為「充值額」：傭金＝直屬下級整條線成功到帳充值 × max(你的比例－直屬下級比例, 0)，充值不含優惠／贈金。<br>` +
+    `極差只比較你和直屬下級，不跨級；列表只列直屬下級，每列業績遞迴包含本人＋所有下層團隊。淨輸贏欄位僅作業績資訊展示，不作為本代理線的計傭基數。<br>` +
+    `日期不可選未來日，單次最多 90 日；本週從週一算到今天。列表預設每頁 15 筆，可切換 10／15／30／50／100 筆；匯出時可另選「本頁數據」或「全部數據」。`;
+}
+
+function initFormulaTooltips() {
+  const popover = $("formulaPopover");
+  const tips = [...document.querySelectorAll(".formula-tip")];
+  let activeTip = null;
+
+  const place = (tip) => {
+    const rect = tip.getBoundingClientRect();
+    const gap = 8;
+    const viewportPad = 12;
+
+    // 先顯示以取得實際尺寸，再決定上／下位置。
+    popover.style.left = viewportPad + "px";
+    popover.style.top = viewportPad + "px";
+    popover.classList.add("show");
+    const box = popover.getBoundingClientRect();
+
+    let left = rect.left + rect.width / 2 - box.width / 2;
+    left = Math.max(viewportPad, Math.min(left, window.innerWidth - box.width - viewportPad));
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    let top;
+    if (spaceBelow >= box.height + gap || spaceBelow >= spaceAbove) {
+      top = rect.bottom + gap;
+    } else {
+      top = rect.top - box.height - gap;
+    }
+    top = Math.max(viewportPad, Math.min(top, window.innerHeight - box.height - viewportPad));
+
+    popover.style.left = Math.round(left) + "px";
+    popover.style.top = Math.round(top) + "px";
+  };
+
+  const show = (tip) => {
+    activeTip = tip;
+    popover.textContent = tip.dataset.formula || "";
+    place(tip);
+  };
+
+  const hide = (tip) => {
+    if (activeTip && tip && activeTip !== tip) return;
+    activeTip = null;
+    popover.classList.remove("show");
+  };
+
+  tips.forEach((tip) => {
+    tip.addEventListener("mouseenter", () => show(tip));
+    tip.addEventListener("mouseleave", () => hide(tip));
+    tip.addEventListener("focus", () => show(tip));
+    tip.addEventListener("blur", () => hide(tip));
+  });
+
+  window.addEventListener("scroll", () => activeTip && place(activeTip), true);
+  window.addEventListener("resize", () => activeTip && place(activeTip));
+}
+
+initFormulaTooltips();
+
+$("rangeTrigger").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const box = $("rangePicker");
+  const willOpen = !box.classList.contains("open");
+  box.classList.toggle("open");
+  if (willOpen) {
+    rangeState.tempStart = rangeState.start;
+    rangeState.tempEnd = rangeState.end;
+    rangeState.view = calendarViewForDate(parseYmd(rangeState.start || ymd(TODAY)));
+    renderCalendars();
+    updateRangePicked();
+  }
+});
+
+$("rangePanel").addEventListener("click", (e) => e.stopPropagation());
+document.querySelectorAll(".range-presets button").forEach((btn) => {
+  btn.addEventListener("click", () => presetRange(btn.dataset.range));
+});
+
+$("prevMonth").addEventListener("click", () => {
+  rangeState.view = new Date(rangeState.view.getFullYear(), rangeState.view.getMonth() - 1, 1);
+  renderCalendars();
+});
+$("nextMonth").addEventListener("click", () => {
+  rangeState.view = new Date(rangeState.view.getFullYear(), rangeState.view.getMonth() + 1, 1);
+  renderCalendars();
+});
+$("cal1").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-date]");
+  if (btn) pickDay(btn.dataset.date);
+});
+$("cal2").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-date]");
+  if (btn) pickDay(btn.dataset.date);
+});
+
+$("rangeClear").addEventListener("click", () => {
+  rangeState.tempStart = "";
+  rangeState.tempEnd = "";
+  rangeState.preset = "";
+  renderCalendars();
+  updateRangePicked();
+});
+
+$("rangeApply").addEventListener("click", () => {
+  if (!rangeState.tempStart || !rangeState.tempEnd) return;
+  const error = validateRange(rangeState.tempStart, rangeState.tempEnd);
+  if (error) {
+    showToast(error);
+    return;
+  }
+  if (!applyRange(rangeState.tempStart, rangeState.tempEnd, rangeState.preset)) return;
+  $("rangePicker").classList.remove("open");
+  runSearch();
+});
+
+$("pageSize").addEventListener("change", (e) => {
+  paginationState.pageSize = Number(e.target.value) || 15;
+  paginationState.page = 1;
+  render();
+});
+
+$("prevPage").addEventListener("click", () => {
+  if (paginationState.page <= 1) return;
+  paginationState.page -= 1;
+  render();
+  $("tbody").closest(".table-wrap").scrollTop = 0;
+});
+
+$("nextPage").addEventListener("click", () => {
+  const totalItems = applyFilter().length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / paginationState.pageSize));
+  if (paginationState.page >= totalPages) return;
+  paginationState.page += 1;
+  render();
+  $("tbody").closest(".table-wrap").scrollTop = 0;
+});
+
+$("pageNumbers").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-page]");
+  if (!btn) return;
+  paginationState.page = Number(btn.dataset.page) || 1;
+  render();
+  $("tbody").closest(".table-wrap").scrollTop = 0;
+});
+
+
+$("exportBtn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (isLoading) return;
+  if (!rangeState.start || !rangeState.end) {
+    showToast("請先選擇結算週期再匯出");
+    return;
+  }
+
+  const list = applyFilter();
+  if (!list.length) {
+    closeExportMenu();
+    showToast("目前沒有可匯出的數據");
+    return;
+  }
+
+  updateExportMenuInfo(list);
+  const wrap = $("exportWrap");
+  const willOpen = !wrap.classList.contains("open");
+  wrap.classList.toggle("open");
+  $("exportBtn").setAttribute("aria-expanded", willOpen ? "true" : "false");
+});
+
+$("exportMenu").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const choice = e.target.closest("[data-export-scope]");
+  if (!choice || isLoading) return;
+
+  const scope = choice.dataset.exportScope;
+  const allRows = applyFilter();
+  const exportRows = scope === "page" ? getCurrentPageRows(allRows) : allRows;
+  if (!exportRows.length) {
+    closeExportMenu();
+    showToast("目前沒有可匯出的數據");
+    return;
+  }
+
+  const filename = exportName(scope);
+  const bytes = makeXlsx(buildExportRows(exportRows));
+  const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  closeExportMenu();
+
+  if (scope === "page") {
+    showToast(`已下載本頁數據：第 ${paginationState.page} 頁，共 ${exportRows.length} 筆｜<b>${filename}</b>`);
+  } else {
+    showToast(`已下載全部數據：共 ${exportRows.length} 筆｜<b>${filename}</b>`);
+  }
+});
+
+document.addEventListener("click", () => closeExportMenu());
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeExportMenu();
+});
+
+$("searchBtn").addEventListener("click", runSearch);
+$("resetBtn").addEventListener("click", () => {
+  if (isLoading) return;
+  $("uid").value = "";
+  $("inviteCode").value = "";
+  presetRange("week");
+  applyRange(rangeState.tempStart, rangeState.tempEnd, "week");
+  runSearch();
+});
+
+["uid", "inviteCode"].forEach((id) => {
+  $(id).addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runSearch();
+  });
+});
+
+updatePlanDisplay();
+paginationState.pageSize = Number($("pageSize").value) || 15;
+applyRange(rangeState.start, rangeState.end, "week");
+renderCalendars();
+updateRangePicked();
+render();
+
+  </script>
+</body>
+</html>
