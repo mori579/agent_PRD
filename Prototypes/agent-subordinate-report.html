@@ -767,7 +767,7 @@
               <th>邀請碼</th>
               <th class="num">有效投注</th>
               <th class="num">充值</th>
-              <th class="num"><span class="formula-label">淨輸贏 <span class="formula-tip" tabindex="0" data-formula="淨輸贏＝(投注－派彩)－返水－優惠；正數＝平台盈利，負數＝平台虧損；金流費不納入。">!</span></span></th>
+              <th class="num"><span class="formula-label">淨輸贏 <span class="formula-tip" tabindex="0" data-formula="淨輸贏＝(已結投注－派彩)－返水－優惠；正數＝平台盈利，負數＝平台虧損；金流費不納入。">!</span></span></th>
               <th class="num">你的比例</th>
               <th class="num">下級比例</th>
               <th class="num"><span class="formula-label">傭金差 <span class="formula-tip" tabindex="0" data-formula="傭金差（極差）＝max(你的比例－直屬下級比例, 0)；只比較你和直屬下級，不跨級比較。">!</span></span></th>
@@ -845,8 +845,8 @@ const MAX_RANGE_DAYS = 90;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const BASE_ROWS = [
-  { uid: "A10001", parent: CURRENT_AGENT_ROOT, inviteCode: "AG88", rate: 0.008, seed: 11, players: ["P11","P12","P13","P21"] },
-  { uid: "A10002", parent: CURRENT_AGENT_ROOT, inviteCode: "K6M2", rate: 0.007, seed: 23, players: ["P31","P32"] },
+  { uid: "A10001", parent: CURRENT_AGENT_ROOT, inviteCode: "AG88", rate: 0.008, seed: 11, players: ["P11","P12","P13","P21","P-SHARED-01"] },
+  { uid: "A10002", parent: CURRENT_AGENT_ROOT, inviteCode: "K6M2", rate: 0.007, seed: 23, players: ["P31","P32","P-SHARED-01"] },
   { uid: "A10003", parent: CURRENT_AGENT_ROOT, inviteCode: "Q9TX", rate: 0.006, seed: 37, players: ["P33"] },
   { uid: "A21001", parent: "A10001", inviteCode: "N4P7", rate: 0.005, seed: 41, players: ["P12","P41"] },
   { uid: "A21002", parent: "A10001", inviteCode: "H2K8", rate: 0.004, seed: 53, players: ["P51"] },
@@ -859,7 +859,8 @@ const BASE_ROWS = [
   { uid: "A71001", parent: "A61001", inviteCode: "L4S8", rate: 0.0005, seed: 139, players: ["P111"] }
 ];
 
-// Expand prototype data so pagination and export-scope behaviors can be exercised with more than 100 direct subordinates.
+// Expand prototype data so pagination/export can be exercised with more than 100 direct subordinates.
+// P-SHARED-01 intentionally appears under A10001 and A10002 to verify cross-line active-player de-duplication.
 function mockInviteCode(n) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let value = n * 7919 + 17;
@@ -878,7 +879,9 @@ for (let i = 4; i <= 135; i++) {
     inviteCode: mockInviteCode(i),
     rate: 0.006 + ((i * 7) % 5) * 0.0006,
     seed: 149 + i * 11,
-    players: ["PX" + i + "A", "PX" + i + "B", "PX" + i + "C"]
+    players: ["PX" + i + "A", "PX" + i + "B", "PX" + i + "C"],
+    // 保留一筆零業績直屬下級，供 QA 驗證符合條件時仍須顯示 0.00／0。
+    noActivity: i === 135
   });
 }
 
@@ -950,11 +953,15 @@ function subordinateDepth(row) {
 /**
  * 原型每日數據。
  * 亞洲口徑：
- * 平台盈虧 = 投注 - 派彩
+ * 平台盈虧 = 已結投注 - 派彩
  * 淨輸贏 = 平台盈虧 - 返水 - 優惠
  * 金流費不納入代理淨輸贏。
  */
 function dayMetrics(row, dateStr) {
+  if (row.noActivity) {
+    return { bet: 0, payout: 0, validBet: 0, rebate: 0, bonus: 0, platformPnl: 0, pnl: 0, deposit: 0, active: [] };
+  }
+
   const dayNum = Number(dateStr.replace(/-/g, ""));
   const h = hash(row.seed * 97 + dayNum);
   const depth = subordinateDepth(row);
@@ -1223,9 +1230,14 @@ function commissionBase(row) {
   return row.deposit;
 }
 
+function roundMoney2(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
 function calcCommission(row) {
   const diff = Math.max(0, PLAN.selfRate - row.rate);
-  return commissionBase(row) * diff;
+  // 報表傭金統一以小數 2 位作為列值與合計精度，避免畫面列加總與合計差 0.01。
+  return roundMoney2(commissionBase(row) * diff);
 }
 
 function applyFilter() {
@@ -1242,8 +1254,7 @@ function applyFilter() {
       return true;
     })
     .sort((a, b) => a.uid.localeCompare(b.uid))
-    .map((row) => aggregateRow(row, start, end))
-    .filter((row) => row.validBet > 0 || row.deposit > 0 || row.pnl !== 0);
+    .map((row) => aggregateRow(row, start, end));
 }
 
 const paginationState = {
@@ -1335,7 +1346,7 @@ function render() {
       <td class="invite-code">${row.inviteCode}</td>
       <td class="num">${money(row.validBet)}</td>
       <td class="num">${money(row.deposit)}</td>
-      <td class="num" title="亞洲口徑：平台盈虧－返水－優惠">${money(row.pnl)}</td>
+      <td class="num">${money(row.pnl)}</td>
       <td class="num">${pct(PLAN.selfRate)}</td>
       <td class="num">${pct(row.rate)}</td>
       <td class="num">${pct(diff)}</td>
@@ -1352,7 +1363,7 @@ function updateSums(list) {
   const valid = list.reduce((s, r) => s + r.validBet, 0);
   const deposit = list.reduce((s, r) => s + r.deposit, 0);
   const pnl = list.reduce((s, r) => s + r.pnl, 0);
-  const comm = list.reduce((s, r) => s + calcCommission(r), 0);
+  const comm = roundMoney2(list.reduce((s, r) => s + calcCommission(r), 0));
   const active = new Set(list.flatMap((r) => r.activePlayers)).size;
 
   $("sumValid").textContent = money(valid);
@@ -1592,7 +1603,7 @@ function buildExportRows(list) {
       (PLAN.selfRate * 100).toFixed(2) + "%",
       (row.rate * 100).toFixed(2) + "%",
       (diff * 100).toFixed(2) + "%",
-      Number(calcCommission(row).toFixed(2)),
+      calcCommission(row),
       row.activePlayers.length
     ];
   });
@@ -1604,7 +1615,7 @@ function buildExportRows(list) {
     list.reduce((s, r) => s + r.deposit, 0),
     list.reduce((s, r) => s + r.pnl, 0),
     "", "", "",
-    Number(list.reduce((s, r) => s + calcCommission(r), 0).toFixed(2)),
+    roundMoney2(list.reduce((s, r) => s + calcCommission(r), 0)),
     active
   ];
 
@@ -1774,10 +1785,6 @@ $("pageNumbers").addEventListener("click", (e) => {
 $("exportBtn").addEventListener("click", (e) => {
   e.stopPropagation();
   if (isLoading) return;
-  if (!rangeState.start || !rangeState.end) {
-    showToast("請先選擇結算週期再匯出");
-    return;
-  }
 
   const list = applyFilter();
   if (!list.length) {
