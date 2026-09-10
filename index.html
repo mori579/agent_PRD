@@ -62,10 +62,24 @@
       display: flex; justify-content: space-between; align-items: center;
     }
     .topbar span { color: var(--muted); font-size: 13px; }
-    .topbar button {
+    .topbar-left, .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .topbar #menuBtn {
       display: none; border: 1px solid var(--line); background: #fff;
       height: 34px; padding: 0 12px; border-radius: 8px; cursor: pointer;
     }
+    .proto-btn {
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 8px;
+      background: var(--navy);
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .proto-btn:hover { background: var(--teal); }
     .article { max-width: 980px; margin: 0 auto; padding: 28px 28px 80px; }
     .article h1 {
       font-size: 28px; color: var(--navy); margin: 36px 0 14px;
@@ -104,7 +118,7 @@
         z-index: 9; transition: transform .2s ease;
       }
       .sidebar.open { transform: none; }
-      .topbar button { display: inline-block; }
+      .topbar #menuBtn { display: inline-block; }
       .mask.show { display: block; }
     }
   </style>
@@ -121,8 +135,13 @@
     </aside>
     <div class="content-wrap">
       <div class="topbar">
-        <button type="button" id="menuBtn">目錄</button>
-        <span>代理後台｜下級報表｜v1.0｜2026-09-09</span>
+        <div class="topbar-left">
+          <button type="button" id="menuBtn">目錄</button>
+          <span>代理後台｜下級報表｜v1.0｜2026-09-09</span>
+        </div>
+        <div class="topbar-right">
+          <a class="proto-btn" href="Prototypes/agent-subordinate-report.html">原型</a>
+        </div>
       </div>
       <article class="article" id="article">載入中…</article>
     </div>
