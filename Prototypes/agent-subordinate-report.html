@@ -274,7 +274,7 @@
     }
     .range-foot .picked { color: var(--muted); font-size: 12px; }
     .range-foot .btns { display: flex; gap: 8px; }
-    .btn, .ms-toggle {
+    .btn {
       height: 32px;
       border: 1px solid var(--line-2);
       background: var(--panel-2);
@@ -284,12 +284,6 @@
       cursor: pointer;
       font-size: 12px;
     }
-    .shortcuts button.active {
-      background: rgba(231,194,122,.16);
-      border-color: rgba(231,194,122,.45);
-      color: var(--gold);
-    }
-
     .btn.primary {
       height: 40px;
       background: linear-gradient(180deg, #e7c27a, #c9a45a);
@@ -299,42 +293,6 @@
       min-width: 84px;
     }
     .btn.ghost { height: 40px; min-width: 72px; }
-
-    .ms { position: relative; }
-    .ms-toggle {
-      width: 100%;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-2);
-    }
-    .ms-toggle .ph { color: var(--muted-2); }
-    .ms-menu {
-      display: none;
-      position: absolute;
-      z-index: 20;
-      top: calc(100% + 6px);
-      left: 0;
-      right: 0;
-      background: #1c2538;
-      border: 1px solid var(--line-2);
-      border-radius: 10px;
-      padding: 8px;
-      box-shadow: var(--shadow);
-    }
-    .ms.open .ms-menu { display: block; }
-    .ms-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px;
-      border-radius: 8px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    .ms-item:hover { background: rgba(255,255,255,.04); }
-    .ms-item input { accent-color: var(--gold-2); }
 
     .table-wrap {
       width: 100%;
@@ -365,16 +323,6 @@
     }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     tbody tr:hover { background: rgba(255,255,255,.03); }
-    .tag {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      border: 1px solid var(--line-2);
-      color: var(--muted);
-    }
-    .tag.agent { color: var(--blue); border-color: rgba(122,162,255,.35); background: rgba(122,162,255,.08); }
-    .tag.player { color: var(--cyan); border-color: rgba(110,231,197,.3); background: rgba(110,231,197,.08); }
     .invite-code { color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: .03em; }
     .formula-label { display: inline-flex; align-items: center; gap: 5px; }
     .formula-tip {
@@ -651,7 +599,7 @@
       <article class="kpi cyan">
         <div class="label">有效投注</div>
         <div class="value" id="sumValid">0.00</div>
-        <div class="hint">目前篩選結果合計</div>
+        <div class="hint">已結算且實際產生有效流水的本金</div>
       </article>
       <article class="kpi blue">
         <div class="label">充值</div>
@@ -659,7 +607,7 @@
         <div class="hint">成功到帳，不含優惠</div>
       </article>
       <article class="kpi gold">
-        <div class="label"><span class="formula-label">傭金 <span class="formula-tip" id="sumCommissionFormula" tabindex="0" data-formula="頁面傭金合計＝Σ（各直屬下級整條線成功到帳充值 × max(你的比例－該直屬下級比例, 0)）">!</span></span></div>
+        <div class="label"><span class="formula-label">傭金 <span class="formula-tip" id="sumCommissionFormula" tabindex="0" data-formula="頁面傭金合計＝Σ（各直屬下級整條線成功到帳充值 × max(你的比例－下級比例, 0)）">!</span></span></div>
         <div class="value" id="sumCommission">0.00</div>
         <div class="hint" id="sumCommissionHint">直屬下級各線充值額傭金合計</div>
       </article>
@@ -770,8 +718,8 @@
               <th class="num"><span class="formula-label">淨輸贏 <span class="formula-tip" tabindex="0" data-formula="淨輸贏＝(已結投注－派彩)－返水－優惠；正數＝平台盈利，負數＝平台虧損；金流費不納入。">!</span></span></th>
               <th class="num">你的比例</th>
               <th class="num">下級比例</th>
-              <th class="num"><span class="formula-label">傭金差 <span class="formula-tip" tabindex="0" data-formula="傭金差（極差）＝max(你的比例－直屬下級比例, 0)；只比較你和直屬下級，不跨級比較。">!</span></span></th>
-              <th class="num"><span class="formula-label">傭金 <span class="formula-tip" id="commissionFormula" tabindex="0" data-formula="該列傭金＝直屬下級整條線成功到帳充值 × max(你的比例－該直屬下級比例, 0)；充值不含優惠／贈金，整條線包含本人＋所有下層團隊。">!</span></span></th>
+              <th class="num"><span class="formula-label">傭金差 <span class="formula-tip" tabindex="0" data-formula="傭金差（極差）＝max(你的比例－下級比例, 0)；只比較你和直屬下級，不跨級比較。">!</span></span></th>
+              <th class="num"><span class="formula-label">傭金 <span class="formula-tip" id="commissionFormula" tabindex="0" data-formula="該列傭金＝直屬下級整條線成功到帳充值 × max(你的比例－下級比例, 0)；充值不含優惠／贈金，整條線包含本人＋所有下層團隊。">!</span></span></th>
               <th class="num">活躍玩家</th>
             </tr>
           </thead>
@@ -810,7 +758,7 @@
       </div>
       <p class="note" id="formulaNote">
         結算週期為起始～結束日期元件，可在日曆點選跨月區間，本週／本月／上月位於元件內。
-        列表只列你的直屬下級；每列業績包含該直屬下級本人＋其所有下層團隊，樹狀關係可無限向下。極差只比較你和該直屬下級，不跨級。來源僅展示邀請碼。
+        列表只列你的直屬下級；每列業績包含該直屬下級本人＋其所有下層團隊，樹狀關係可無限向下。極差只比較你和該直屬下級，不跨級。有效投注指已結算且實際產生有效流水的本金；取消、作廢、未接受／未確認、走水或退本等不計。本代理線為充值額方案，有效投注僅作業績展示，不作為傭金基數。
       </p>
     </section>
   </div>
@@ -976,6 +924,11 @@ function dayMetrics(row, dateStr) {
   const pnl = platformPnl - rebate - bonus;
   const deposit = Math.round(validBet * (0.08 + hash(row.seed + dayNum) * 0.12));
   const active = h > 0.35 ? row.players.filter((_, idx) => hash(dayNum + idx + row.seed) > 0.45) : [];
+  // QA fixture: shared player must be present on both direct lines whenever that line has valid turnover,
+  // so cross-line de-duplication can be verified deterministically instead of depending on random hash gates.
+  if (validBet > 0 && row.players.includes("P-SHARED-01") && !active.includes("P-SHARED-01")) {
+    active.push("P-SHARED-01");
+  }
 
   return { bet, payout, validBet, rebate, bonus, platformPnl, pnl, deposit, active };
 }
@@ -1072,7 +1025,8 @@ const rangeState = {
   tempStart: ymd(startOfWeek(TODAY)),
   tempEnd: ymd(TODAY),
   view: calendarViewForDate(startOfWeek(TODAY)),
-  preset: "week"
+  preset: "week",
+  appliedPreset: "week"
 };
 
 function presetRange(type) {
@@ -1117,6 +1071,7 @@ function applyRange(start, end, preset) {
   rangeState.tempStart = start;
   rangeState.tempEnd = end;
   rangeState.preset = preset || "";
+  rangeState.appliedPreset = rangeState.preset;
   const label = $("rangeLabel");
   label.textContent = start.replace(/-/g, "/") + "  ～  " + end.replace(/-/g, "/");
   label.classList.remove("ph");
@@ -1291,14 +1246,23 @@ function paginationItems(totalPages, currentPage) {
 }
 
 function renderPagination(totalItems) {
-  const totalPages = Math.max(1, Math.ceil(totalItems / paginationState.pageSize));
+  if (totalItems === 0) {
+    paginationState.page = 1;
+    $("pageSummary").textContent = "第 0–0 筆，共 0 筆";
+    $("pageNumbers").innerHTML = "";
+    $("prevPage").disabled = true;
+    $("nextPage").disabled = true;
+    return;
+  }
+
+  const totalPages = Math.ceil(totalItems / paginationState.pageSize);
   paginationState.page = Math.min(Math.max(1, paginationState.page), totalPages);
-  const startIndex = totalItems ? (paginationState.page - 1) * paginationState.pageSize + 1 : 0;
-  const endIndex = totalItems ? Math.min(paginationState.page * paginationState.pageSize, totalItems) : 0;
+  const startIndex = (paginationState.page - 1) * paginationState.pageSize + 1;
+  const endIndex = Math.min(paginationState.page * paginationState.pageSize, totalItems);
 
   $("pageSummary").textContent = `第 ${startIndex}–${endIndex} 筆，共 ${totalItems} 筆`;
-  $("prevPage").disabled = paginationState.page <= 1 || totalItems === 0;
-  $("nextPage").disabled = paginationState.page >= totalPages || totalItems === 0;
+  $("prevPage").disabled = paginationState.page <= 1;
+  $("nextPage").disabled = paginationState.page >= totalPages;
 
   $("pageNumbers").innerHTML = paginationItems(totalPages, paginationState.page).map((item) => {
     if (item === "...") return `<span class="page-ellipsis">…</span>`;
@@ -1591,7 +1555,7 @@ function makeXlsx(rows) {
 }
 
 function buildExportRows(list) {
-  const header = ["代理UID","邀請碼","有效投注","充值","淨輸贏","你的比例","直屬下級比例","傭金差","傭金","活躍玩家"];
+  const header = ["代理UID","邀請碼","有效投注","充值","淨輸贏","你的比例","下級比例","傭金差","傭金","活躍玩家"];
   const rows = list.map((row) => {
     const diff = Math.max(0, PLAN.selfRate - row.rate);
     return [
@@ -1626,13 +1590,13 @@ function updatePlanDisplay() {
   $("planModeChip").textContent = "方案模式：" + PLAN.modeLabel;
   $("planCycleChip").textContent = "方案結算：" + PLAN.cycleLabel;
 
-  const commissionFormula = "該列傭金＝直屬下級整條線成功到帳充值 × max(你的比例－該直屬下級比例, 0)；充值不含優惠／贈金。";
-  const totalFormula = "頁面傭金合計＝Σ（各直屬下級整條線成功到帳充值 × max(你的比例－該直屬下級比例, 0)）";
+  const commissionFormula = "該列傭金＝直屬下級整條線成功到帳充值 × max(你的比例－下級比例, 0)；充值不含優惠／贈金。";
+  const totalFormula = "頁面傭金合計＝Σ（各直屬下級整條線成功到帳充值 × max(你的比例－下級比例, 0)）";
   $("commissionFormula").dataset.formula = commissionFormula;
   $("sumCommissionFormula").dataset.formula = totalFormula;
 
   $("formulaNote").innerHTML =
-    `目前代理線方案為「充值額」：傭金＝直屬下級整條線成功到帳充值 × max(你的比例－直屬下級比例, 0)，充值不含優惠／贈金。<br>` +
+    `目前代理線方案為「充值額」：傭金＝直屬下級整條線成功到帳充值 × max(你的比例－下級比例, 0)，充值不含優惠／贈金。<br>` +
     `極差只比較你和直屬下級，不跨級；列表只列直屬下級，每列業績遞迴包含本人＋所有下層團隊。淨輸贏欄位僅作業績資訊展示，不作為本代理線的計傭基數。<br>` +
     `日期不可選未來日，單次最多 90 日；本週從週一算到今天。列表預設每頁 15 筆，可切換 10／15／30／50／100 筆；匯出時可另選「本頁數據」或「全部數據」。`;
 }
@@ -1708,6 +1672,16 @@ $("rangeTrigger").addEventListener("click", (e) => {
     updateRangePicked();
   }
 });
+
+function closeRangePicker() {
+  $("rangePicker").classList.remove("open");
+  // Closing without pressing Confirm discards temporary picks.
+  rangeState.tempStart = rangeState.start;
+  rangeState.tempEnd = rangeState.end;
+  rangeState.preset = rangeState.appliedPreset || "";
+  renderCalendars();
+  updateRangePicked();
+}
 
 $("rangePanel").addEventListener("click", (e) => e.stopPropagation());
 document.querySelectorAll(".range-presets button").forEach((btn) => {
@@ -1834,9 +1808,15 @@ $("exportMenu").addEventListener("click", (e) => {
   }
 });
 
-document.addEventListener("click", () => closeExportMenu());
+document.addEventListener("click", () => {
+  closeExportMenu();
+  closeRangePicker();
+});
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeExportMenu();
+  if (e.key === "Escape") {
+    closeExportMenu();
+    closeRangePicker();
+  }
 });
 
 $("searchBtn").addEventListener("click", runSearch);
