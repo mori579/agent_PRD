@@ -531,6 +531,40 @@
     }
     .toast b { color: var(--cyan); }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(3, 8, 18, .68);
+      backdrop-filter: blur(2px);
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal-card {
+      width: min(380px, calc(100vw - 40px));
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      background: #172136;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      text-align: center;
+    }
+    .modal-title {
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 18px;
+    }
+    .modal-actions .btn { min-width: 96px; height: 38px; }
+
 
     button:disabled { opacity: .55; cursor: not-allowed; }
     tbody[aria-busy="true"] { opacity: .88; }
@@ -648,7 +682,7 @@
                 <button type="button" data-range="lastMonth">上月</button>
                 <button type="button" data-range="last90">近 90 日</button>
               </div>
-              <div class="range-rule">單次查詢最多 90 日；不可選取未發生日期。近 90 日以今日為最後一天。</div>
+              <div class="range-rule">單次查詢最多 90 日；今日之後日期不可選。近 90 日以今日為最後一天。</div>
               <div class="range-cals">
                 <div>
                   <div class="cal-head">
@@ -761,6 +795,14 @@
         列表只列你的直屬下級；每列業績包含該直屬下級本人＋其所有下層團隊，樹狀關係可無限向下。極差只比較你和該直屬下級，不跨級。有效投注指已結算且實際產生有效流水的本金；取消、作廢、未接受／未確認、走水或退本等不計。本代理線為充值額方案，有效投注僅作業績展示，不作為傭金基數。
       </p>
     </section>
+  </div>
+  <div class="modal-backdrop" id="rangeIncompleteModal" role="dialog" aria-modal="true" aria-labelledby="rangeIncompleteTitle" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-title" id="rangeIncompleteTitle">請選擇起始日與結束日</div>
+      <div class="modal-actions">
+        <button type="button" class="btn primary" id="rangeIncompleteClose">關閉</button>
+      </div>
+    </div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="formula-popover" id="formulaPopover" role="tooltip"></div>
@@ -1058,7 +1100,6 @@ function presetRange(type) {
 function validateRange(start, end) {
   if (!start || !end) return "請選擇完整的起始日與結束日";
   if (start > end) return "起始日不可晚於結束日";
-  if (end > ymd(TODAY)) return "不可選取未發生日期";
   if (rangeDaysInclusive(start, end) > MAX_RANGE_DAYS) return "單次查詢最多可選 90 日";
   return "";
 }
@@ -1155,7 +1196,7 @@ function dayBtn(date, out) {
 
   const disabled = isDateDisabled(key);
   const reason = key > ymd(TODAY)
-    ? "未發生日期不可選"
+    ? "未來日期不可選"
     : (disabled ? "與起始日相距超過 90 日" : "");
   return `<button type="button" class="${cls.join(" ")}" data-date="${key}" ${disabled ? "disabled" : ""} ${reason ? `title="${reason}"` : ""}>${date.getDate()}</button>`;
 }
@@ -1713,8 +1754,32 @@ $("rangeClear").addEventListener("click", () => {
   updateRangePicked();
 });
 
+function openRangeIncompleteModal() {
+  const modal = $("rangeIncompleteModal");
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+  $("rangeIncompleteClose").focus();
+}
+
+function closeRangeIncompleteModal() {
+  const modal = $("rangeIncompleteModal");
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+  // Keep the Date Range Picker and current temporary selection intact.
+  $("rangeApply").focus();
+}
+
+$("rangeIncompleteModal").addEventListener("click", (e) => e.stopPropagation());
+$("rangeIncompleteClose").addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeRangeIncompleteModal();
+});
+
 $("rangeApply").addEventListener("click", () => {
-  if (!rangeState.tempStart || !rangeState.tempEnd) return;
+  if (!rangeState.tempStart || !rangeState.tempEnd) {
+    openRangeIncompleteModal();
+    return;
+  }
   const error = validateRange(rangeState.tempStart, rangeState.tempEnd);
   if (error) {
     showToast(error);
@@ -1814,6 +1879,10 @@ document.addEventListener("click", () => {
 });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    if ($("rangeIncompleteModal").classList.contains("show")) {
+      closeRangeIncompleteModal();
+      return;
+    }
     closeExportMenu();
     closeRangePicker();
   }
